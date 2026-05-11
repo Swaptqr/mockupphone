@@ -4,20 +4,11 @@ Drop-in framed mobile preview component for React / Next.js. Wraps any URL in an
 
 ## Install
 
-This package ships source-only (a single `.tsx` file). Install directly from GitHub:
-
 ```bash
-npm install github:Swaptqr/mockupphone
+npm install mockupphone
 ```
 
-Then in your `next.config.js` (or `next.config.mjs`) add the package to `transpilePackages` so Next compiles the source:
-
-```js
-/** @type {import('next').NextConfig} */
-module.exports = {
-  transpilePackages: ['mockupphone'],
-};
-```
+Works with Next.js, Vite, CRA, or any React 18+ setup. No additional config required.
 
 ## Usage
 
