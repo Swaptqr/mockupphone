@@ -46,34 +46,8 @@ const HOSTS = [
 ];
 
 type Filter = 'all' | 'modern' | 'retro';
-type Theme = 'light' | 'dark';
-
-const THEMES: Record<Theme, {
-  bg: string; text: string; textMuted: string; textFaint: string;
-  border: string; surface: string; surfaceAlt: string;
-  pillBg: string; pillActiveBg: string; pillActiveText: string; pillInactiveText: string;
-  buttonBorder: string; buttonActiveBg: string; buttonActiveText: string;
-}> = {
-  light: {
-    bg: 'radial-gradient(ellipse at top, #fafafa 0%, #f4f4f5 50%, #e9e9ec 100%)',
-    text: '#0a0a0a', textMuted: '#52525b', textFaint: '#a1a1aa',
-    border: '#e4e4e7', surface: '#ffffff', surfaceAlt: '#f4f4f5',
-    pillBg: '#e4e4e7', pillActiveBg: '#ffffff', pillActiveText: '#0a0a0a', pillInactiveText: '#71717a',
-    buttonBorder: '#e4e4e7', buttonActiveBg: '#0a0a0a', buttonActiveText: '#ffffff',
-  },
-  dark: {
-    bg: 'radial-gradient(ellipse at top, #1f1f23 0%, #0f0f12 55%, #050507 100%)',
-    text: '#fafafa', textMuted: '#a1a1aa', textFaint: '#71717a',
-    border: '#27272a', surface: '#18181b', surfaceAlt: '#27272a',
-    pillBg: '#27272a', pillActiveBg: '#3f3f46', pillActiveText: '#fafafa', pillInactiveText: '#a1a1aa',
-    buttonBorder: '#27272a', buttonActiveBg: '#fafafa', buttonActiveText: '#0a0a0a',
-  },
-};
 
 export default function Home() {
-  const [theme, setTheme] = useState<Theme>('light');
-  const t = THEMES[theme];
-
   const [filter, setFilter] = useState<Filter>('all');
   const visibleDevices = useMemo(
     () => (filter === 'all' ? DEVICES : DEVICES.filter((d) => d.category === filter)),
@@ -81,6 +55,7 @@ export default function Home() {
   );
   const [frame, setFrame] = useState<PhoneFrame>(DEVICES[0].id);
   const [showCode, setShowCode] = useState(false);
+  const [dark, setDark] = useState(false);
 
   const effectiveFrame = visibleDevices.find((d) => d.id === frame)?.id
     ?? visibleDevices[0]?.id
@@ -90,9 +65,8 @@ export default function Home() {
     <main
       style={{
         minHeight: '100vh',
-        background: t.bg,
-        color: t.text,
-        transition: 'background 240ms ease, color 240ms ease',
+        background:
+          'radial-gradient(ellipse at top, #fafafa 0%, #f4f4f5 50%, #e9e9ec 100%)',
       }}
     >
       <div
@@ -117,16 +91,16 @@ export default function Home() {
           <header>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
               <div>
-                <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.4, color: t.textFaint, fontWeight: 600 }}>
+                <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.4, color: '#a1a1aa', fontWeight: 600 }}>
                   Component
                 </div>
-                <h1 style={{ margin: '4px 0 8px', fontSize: 28, fontWeight: 700, letterSpacing: -0.6, color: t.text }}>
+                <h1 style={{ margin: '4px 0 8px', fontSize: 28, fontWeight: 700, letterSpacing: -0.6 }}>
                   mockupphone
                 </h1>
               </div>
-              <ThemeToggle theme={theme} onChange={setTheme} t={t} />
+              <ScreenThemeToggle dark={dark} onChange={setDark} />
             </div>
-            <p style={{ margin: 0, color: t.textMuted, fontSize: 14, lineHeight: 1.5 }}>
+            <p style={{ margin: 0, color: '#52525b', fontSize: 14, lineHeight: 1.5 }}>
               Drop a framed mobile iframe into any React / Next app. Toggle hosts
               and devices, or hardcode a single device.
             </p>
@@ -134,11 +108,11 @@ export default function Home() {
 
           {/* Modern / Retro filter */}
           <section>
-            <Label color={t.textMuted}>Show</Label>
+            <Label>Show</Label>
             <div
               style={{
                 display: 'inline-flex', padding: 3, gap: 2,
-                background: t.pillBg, borderRadius: 999,
+                background: '#e4e4e7', borderRadius: 999,
               }}
             >
               {(['all', 'modern', 'retro'] as Filter[]).map((f) => (
@@ -150,11 +124,10 @@ export default function Home() {
                     padding: '6px 14px',
                     fontSize: 12, fontWeight: 600, borderRadius: 999,
                     cursor: 'pointer',
-                    background: filter === f ? t.pillActiveBg : 'transparent',
-                    color: filter === f ? t.pillActiveText : t.pillInactiveText,
-                    boxShadow: filter === f ? '0 1px 2px rgba(0,0,0,0.12)' : 'none',
+                    background: filter === f ? '#fff' : 'transparent',
+                    color: filter === f ? '#0a0a0a' : '#71717a',
+                    boxShadow: filter === f ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
                     textTransform: 'capitalize',
-                    transition: 'background 120ms, color 120ms',
                   }}
                 >
                   {f}
@@ -165,7 +138,7 @@ export default function Home() {
 
           {/* Device buttons */}
           <section>
-            <Label color={t.textMuted}>Device</Label>
+            <Label>Device</Label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {visibleDevices.map((d) => (
                 <button
@@ -176,9 +149,9 @@ export default function Home() {
                     padding: '8px 12px', fontSize: 13,
                     borderRadius: 8,
                     border: '1px solid',
-                    borderColor: effectiveFrame === d.id ? t.buttonActiveBg : t.buttonBorder,
-                    background: effectiveFrame === d.id ? t.buttonActiveBg : t.surface,
-                    color: effectiveFrame === d.id ? t.buttonActiveText : t.text,
+                    borderColor: effectiveFrame === d.id ? '#0a0a0a' : '#e4e4e7',
+                    background: effectiveFrame === d.id ? '#0a0a0a' : '#fff',
+                    color: effectiveFrame === d.id ? '#fff' : '#0a0a0a',
                     cursor: 'pointer', fontWeight: 500,
                     transition: 'all 120ms',
                   }}
@@ -187,7 +160,7 @@ export default function Home() {
                 </button>
               ))}
               {visibleDevices.length === 0 && (
-                <div style={{ fontSize: 12, color: t.textFaint, padding: '8px 12px' }}>
+                <div style={{ fontSize: 12, color: '#a1a1aa', padding: '8px 12px' }}>
                   Nothing in this category.
                 </div>
               )}
@@ -201,15 +174,13 @@ export default function Home() {
               style={{
                 width: '100%', textAlign: 'left',
                 padding: '10px 12px', fontSize: 13, fontWeight: 500,
-                borderRadius: 8,
-                border: `1px solid ${t.border}`,
-                background: t.surface, color: t.text,
-                cursor: 'pointer',
+                borderRadius: 8, border: '1px solid #e4e4e7',
+                background: '#fff', cursor: 'pointer',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               }}
             >
               <span>How to use</span>
-              <span style={{ color: t.textFaint }}>{showCode ? '−' : '+'}</span>
+              <span style={{ color: '#a1a1aa' }}>{showCode ? '−' : '+'}</span>
             </button>
             {showCode && (
               <pre
@@ -224,32 +195,28 @@ export default function Home() {
   IPadMockup,   AndroidTabMockup,
 } from 'mockupphone';
 
-// Single device
+// Single device, light screen
 <PhoneMock frame="iphone-17-pro" hosts={[...]} />
 
-// Built-in device picker (any frames)
+// Same device, dark screen
+<PhoneMock frame="iphone-17-pro" hosts={[...]} dark />
+
+// Picker (any frames)
 <PhoneMock
   frames={['iphone-17-pro', 'pixel-10', 'razr-v3']}
   hosts={[...]}
-/>
-
-// Family-locked components — picker scoped to that family
-<IPhoneMockup     hosts={[...]} />
-<AndroidMockup    hosts={[...]} />
-<IPadMockup       hosts={[...]} />
-<AndroidTabMockup hosts={[...]} />`}</pre>
+/>`}</pre>
             )}
           </section>
 
           <div
             style={{
-              fontSize: 11, color: t.textFaint, lineHeight: 1.5,
-              padding: '10px 12px',
-              background: t.surfaceAlt,
-              border: `1px solid ${t.border}`, borderRadius: 8,
+              fontSize: 11, color: '#a1a1aa', lineHeight: 1.5,
+              padding: '10px 12px', background: '#f4f4f5',
+              border: '1px solid #e4e4e7', borderRadius: 8,
             }}
           >
-            <strong style={{ color: t.textMuted }}>Note:</strong> Sites with{' '}
+            <strong style={{ color: '#71717a' }}>Note:</strong> Sites with{' '}
             <code>X-Frame-Options: DENY</code> or strict{' '}
             <code>frame-ancestors</code> CSP can&apos;t render in an iframe — your
             own apps are fine.
@@ -258,19 +225,19 @@ export default function Home() {
 
         {/* Right: phone stage */}
         <section style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: 16 }}>
-          <PhoneMock hosts={HOSTS} frame={effectiveFrame} />
+          <PhoneMock hosts={HOSTS} frame={effectiveFrame} dark={dark} />
         </section>
       </div>
     </main>
   );
 }
 
-function Label({ children, color }: { children: React.ReactNode; color: string }) {
+function Label({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
         fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2,
-        color, fontWeight: 600, marginBottom: 8,
+        color: '#71717a', fontWeight: 600, marginBottom: 8,
       }}
     >
       {children}
@@ -278,33 +245,28 @@ function Label({ children, color }: { children: React.ReactNode; color: string }
   );
 }
 
-function ThemeToggle({
-  theme, onChange, t,
+function ScreenThemeToggle({
+  dark, onChange,
 }: {
-  theme: Theme;
-  onChange: (next: Theme) => void;
-  t: (typeof THEMES)[Theme];
+  dark: boolean;
+  onChange: (next: boolean) => void;
 }) {
-  const isDark = theme === 'dark';
   return (
     <button
       type="button"
-      onClick={() => onChange(isDark ? 'light' : 'dark')}
-      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      onClick={() => onChange(!dark)}
+      aria-label={dark ? 'Switch screen to light mode' : 'Switch screen to dark mode'}
+      title={dark ? 'Light screen' : 'Dark screen'}
       style={{
-        width: 32, height: 32,
-        borderRadius: 999,
-        border: `1px solid ${t.border}`,
-        background: t.surface,
-        color: t.text,
+        width: 32, height: 32, borderRadius: 999,
+        border: '1px solid #e4e4e7',
+        background: '#fff', color: '#0a0a0a',
         cursor: 'pointer',
         display: 'grid', placeItems: 'center',
-        transition: 'all 160ms',
         flexShrink: 0,
       }}
     >
-      {isDark ? <SunIcon /> : <MoonIcon />}
+      {dark ? <SunIcon /> : <MoonIcon />}
     </button>
   );
 }
