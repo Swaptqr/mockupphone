@@ -75,7 +75,6 @@ import PhoneMock, { MODERN_FRAMES, RETRO_FRAMES, ALL_FRAMES } from 'mockupphone'
 | `scale`        | `number`                              | per-frame         | Override the default visual scale.                          |
 | `hideSwitcher` | `boolean`                             | `false`           | Hide the dropdowns above the frame.                         |
 | `hideChrome`   | `boolean`                             | `false`           | Hide simulated status bar / notch / home indicator.         |
-| `dark`         | `boolean`                             | `false`           | Dark screen surface + light status bar / home indicator.    |
 | `host`         | `string`                              | —                 | Controlled host. Pair with `onHostChange`.                  |
 | `onHostChange` | `(url: string) => void`               | —                 | Fires when the user changes hosts.                          |
 

@@ -135,9 +135,6 @@ export interface PhoneMockProps {
   hideSwitcher?: boolean;
   /** Hide simulated status bar / notch / home indicator overlays. */
   hideChrome?: boolean;
-  /** Renders the screen with a dark background and light status bar / home
-   *  indicator. Useful when the iframe content is dark-themed. */
-  dark?: boolean;
   /** Controlled host URL (pairs with onHostChange). */
   host?: string;
   onHostChange?: (url: string) => void;
@@ -399,12 +396,8 @@ function Key({
 // Per-frame "chrome" renderers (the simulated UI inside the screen)
 // ────────────────────────────────────────────────────────────────────────────
 
-function IPhoneChrome({ screenW, frame, dark }: { screenW: number; frame: PhoneFrame; dark: boolean }) {
+function IPhoneChrome({ screenW, frame }: { screenW: number; frame: PhoneFrame }) {
   const hasIsland = HAS_DYNAMIC_ISLAND.includes(frame);
-  const fg = dark ? '#fafafa' : '#000';
-  const textShadow = dark
-    ? '0 0 6px rgba(0,0,0,0.5)'
-    : '0 0 6px rgba(255,255,255,0.6)';
   return (
     <>
       <div
@@ -415,13 +408,13 @@ function IPhoneChrome({ screenW, frame, dark }: { screenW: number; frame: PhoneF
           display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
           padding: '14px 32px 0', boxSizing: 'border-box',
           fontFamily: '-apple-system, "SF Pro Display", sans-serif',
-          fontSize: 15, fontWeight: 600, color: fg,
+          fontSize: 15, fontWeight: 600, color: '#000',
           pointerEvents: 'none', zIndex: 2,
-          textShadow,
+          textShadow: '0 0 6px rgba(255,255,255,0.6)',
         }}
       >
         <span style={{ minWidth: 60 }}>9:41</span>
-        <div style={{ minWidth: 60, display: 'flex', justifyContent: 'flex-end', paddingTop: 2, color: fg }}>
+        <div style={{ minWidth: 60, display: 'flex', justifyContent: 'flex-end', paddingTop: 2 }}>
           <StatusBarIcons />
         </div>
       </div>
@@ -432,10 +425,7 @@ function IPhoneChrome({ screenW, frame, dark }: { screenW: number; frame: PhoneF
             position: 'absolute', top: 11, left: '50%', transform: 'translateX(-50%)',
             width: 122, height: 36, borderRadius: 999,
             background: '#000',
-            // Subtle outline so the island stays visible against a dark screen
-            boxShadow: dark
-              ? 'inset 0 0 0 1px rgba(255,255,255,0.12), 0 0 0 1px rgba(255,255,255,0.06)'
-              : 'inset 0 0 0 1px rgba(255,255,255,0.04)',
+            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.04)',
             pointerEvents: 'none', zIndex: 3,
           }}
         />
@@ -445,7 +435,7 @@ function IPhoneChrome({ screenW, frame, dark }: { screenW: number; frame: PhoneF
         style={{
           position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
           width: screenW * 0.34, height: 5, borderRadius: 3,
-          background: dark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)',
+          background: 'rgba(0,0,0,0.85)',
           pointerEvents: 'none', zIndex: 2,
         }}
       />
@@ -453,14 +443,10 @@ function IPhoneChrome({ screenW, frame, dark }: { screenW: number; frame: PhoneF
   );
 }
 
-function AndroidChrome({ screenW, frame, dark }: { screenW: number; frame: PhoneFrame; dark: boolean }) {
+function AndroidChrome({ screenW, frame }: { screenW: number; frame: PhoneFrame }) {
   const isGalaxy = frame.startsWith('galaxy-');
   const camTop = isGalaxy ? 8 : 10;
   const camSize = isGalaxy ? 12 : 14;
-  const fg = dark ? '#fafafa' : '#000';
-  const textShadow = dark
-    ? '0 0 4px rgba(0,0,0,0.5)'
-    : '0 0 4px rgba(255,255,255,0.6)';
   return (
     <>
       <div
@@ -471,9 +457,9 @@ function AndroidChrome({ screenW, frame, dark }: { screenW: number; frame: Phone
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 20px', boxSizing: 'border-box',
           fontFamily: 'Roboto, sans-serif',
-          fontSize: 13, fontWeight: 500, color: fg,
+          fontSize: 13, fontWeight: 500, color: '#000',
           pointerEvents: 'none', zIndex: 2,
-          textShadow,
+          textShadow: '0 0 4px rgba(255,255,255,0.6)',
         }}
       >
         <span>9:41</span>
@@ -485,9 +471,7 @@ function AndroidChrome({ screenW, frame, dark }: { screenW: number; frame: Phone
           position: 'absolute', top: camTop, left: '50%', transform: 'translateX(-50%)',
           width: camSize, height: camSize, borderRadius: '50%',
           background: '#000',
-          boxShadow: dark
-            ? '0 0 0 1.5px rgba(255,255,255,0.18)'
-            : '0 0 0 1.5px rgba(0,0,0,0.5)',
+          boxShadow: '0 0 0 1.5px rgba(0,0,0,0.5)',
           pointerEvents: 'none', zIndex: 3,
         }}
       />
@@ -496,7 +480,7 @@ function AndroidChrome({ screenW, frame, dark }: { screenW: number; frame: Phone
         style={{
           position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)',
           width: 90, height: 3, borderRadius: 2,
-          background: dark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)',
+          background: 'rgba(0,0,0,0.55)',
           pointerEvents: 'none', zIndex: 2,
         }}
       />
@@ -713,7 +697,6 @@ export default function PhoneMock({
   scale,
   hideSwitcher = false,
   hideChrome = false,
-  dark = false,
   host,
   onHostChange,
   className,
@@ -814,28 +797,22 @@ export default function PhoneMock({
                 width: spec.screenW, height: spec.screenH,
                 borderRadius: spec.screenRadius,
                 overflow: 'hidden',
-                background: dark ? '#0a0a0a' : '#fff',
+                background: '#fff',
                 boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.4)',
-                transition: 'background 200ms ease',
               }}
             >
               <iframe
                 key={url}
                 src={url}
                 title={`PhoneMock — ${url}`}
-                style={{
-                  width: '100%', height: '100%',
-                  border: 'none', display: 'block',
-                  background: dark ? '#0a0a0a' : '#fff',
-                  colorScheme: dark ? 'dark' : 'light',
-                }}
+                style={{ width: '100%', height: '100%', border: 'none', display: 'block', background: '#fff' }}
               />
 
               {!hideChrome && IPHONE_CHROME_FRAMES.includes(currentFrame) && (
-                <IPhoneChrome screenW={spec.screenW} frame={currentFrame} dark={dark} />
+                <IPhoneChrome screenW={spec.screenW} frame={currentFrame} />
               )}
               {!hideChrome && ANDROID_CHROME_FRAMES.includes(currentFrame) && (
-                <AndroidChrome screenW={spec.screenW} frame={currentFrame} dark={dark} />
+                <AndroidChrome screenW={spec.screenW} frame={currentFrame} />
               )}
             </div>
 

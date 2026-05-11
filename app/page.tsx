@@ -55,7 +55,6 @@ export default function Home() {
   );
   const [frame, setFrame] = useState<PhoneFrame>(DEVICES[0].id);
   const [showCode, setShowCode] = useState(false);
-  const [dark, setDark] = useState(false);
 
   const effectiveFrame = visibleDevices.find((d) => d.id === frame)?.id
     ?? visibleDevices[0]?.id
@@ -89,17 +88,12 @@ export default function Home() {
           }}
         >
           <header>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-              <div>
-                <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.4, color: '#a1a1aa', fontWeight: 600 }}>
-                  Component
-                </div>
-                <h1 style={{ margin: '4px 0 8px', fontSize: 28, fontWeight: 700, letterSpacing: -0.6 }}>
-                  mockupphone
-                </h1>
-              </div>
-              <ScreenThemeToggle dark={dark} onChange={setDark} />
+            <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.4, color: '#a1a1aa', fontWeight: 600 }}>
+              Component
             </div>
+            <h1 style={{ margin: '4px 0 8px', fontSize: 28, fontWeight: 700, letterSpacing: -0.6 }}>
+              mockupphone
+            </h1>
             <p style={{ margin: 0, color: '#52525b', fontSize: 14, lineHeight: 1.5 }}>
               Drop a framed mobile iframe into any React / Next app. Toggle hosts
               and devices, or hardcode a single device.
@@ -195,17 +189,20 @@ export default function Home() {
   IPadMockup,   AndroidTabMockup,
 } from 'mockupphone';
 
-// Single device, light screen
+// Single device
 <PhoneMock frame="iphone-17-pro" hosts={[...]} />
 
-// Same device, dark screen
-<PhoneMock frame="iphone-17-pro" hosts={[...]} dark />
-
-// Picker (any frames)
+// Built-in device picker (any frames)
 <PhoneMock
   frames={['iphone-17-pro', 'pixel-10', 'razr-v3']}
   hosts={[...]}
-/>`}</pre>
+/>
+
+// Family-locked components
+<IPhoneMockup     hosts={[...]} />
+<AndroidMockup    hosts={[...]} />
+<IPadMockup       hosts={[...]} />
+<AndroidTabMockup hosts={[...]} />`}</pre>
             )}
           </section>
 
@@ -225,7 +222,7 @@ export default function Home() {
 
         {/* Right: phone stage */}
         <section style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: 16 }}>
-          <PhoneMock hosts={HOSTS} frame={effectiveFrame} dark={dark} />
+          <PhoneMock hosts={HOSTS} frame={effectiveFrame} />
         </section>
       </div>
     </main>
@@ -245,45 +242,3 @@ function Label({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ScreenThemeToggle({
-  dark, onChange,
-}: {
-  dark: boolean;
-  onChange: (next: boolean) => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!dark)}
-      aria-label={dark ? 'Switch screen to light mode' : 'Switch screen to dark mode'}
-      title={dark ? 'Light screen' : 'Dark screen'}
-      style={{
-        width: 32, height: 32, borderRadius: 999,
-        border: '1px solid #e4e4e7',
-        background: '#fff', color: '#0a0a0a',
-        cursor: 'pointer',
-        display: 'grid', placeItems: 'center',
-        flexShrink: 0,
-      }}
-    >
-      {dark ? <SunIcon /> : <MoonIcon />}
-    </button>
-  );
-}
-
-function SunIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2 M12 20v2 M2 12h2 M20 12h2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M4.93 19.07l1.41-1.41 M17.66 6.34l1.41-1.41" />
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-    </svg>
-  );
-}
