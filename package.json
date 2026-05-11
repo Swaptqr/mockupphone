@@ -1,6 +1,6 @@
 {
   "name": "mockupphone",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Drop-in framed mobile preview component for React / Next.js. Wraps any URL in an iframe styled as iPhone, Pixel, BlackBerry, Razr, or LG enV2 — with a built-in host switcher.",
   "license": "MIT",
   "repository": {

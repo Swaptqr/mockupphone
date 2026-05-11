@@ -2,13 +2,55 @@
 
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  Frame catalog
+//
+//  To add a new device: drop a new entry in FRAMES below, add its id to the
+//  PhoneFrame type union, and (if it has split hardware below/beside the
+//  screen) plug into the corresponding extras renderer at the bottom.
+// ─────────────────────────────────────────────────────────────────────────────
+
 export type PhoneFrame =
+  // Modern
+  | 'iphone-16-pro-max'
+  | 'iphone-16-pro'
   | 'iphone-15-pro'
   | 'iphone-se'
   | 'pixel-8'
+  | 'galaxy-s24-ultra'
+  // Retro
   | 'blackberry'
   | 'razr-v3'
   | 'lg-env2';
+
+export const MODERN_FRAMES: PhoneFrame[] = [
+  'iphone-16-pro-max',
+  'iphone-16-pro',
+  'iphone-15-pro',
+  'pixel-8',
+  'galaxy-s24-ultra',
+  'iphone-se',
+];
+
+export const RETRO_FRAMES: PhoneFrame[] = [
+  'blackberry',
+  'razr-v3',
+  'lg-env2',
+];
+
+export const ALL_FRAMES: PhoneFrame[] = [...MODERN_FRAMES, ...RETRO_FRAMES];
+
+export const FRAME_LABELS: Record<PhoneFrame, string> = {
+  'iphone-16-pro-max': 'iPhone 16 Pro Max',
+  'iphone-16-pro':     'iPhone 16 Pro',
+  'iphone-15-pro':     'iPhone 15 Pro',
+  'iphone-se':         'iPhone SE',
+  'pixel-8':           'Pixel 8',
+  'galaxy-s24-ultra':  'Galaxy S24 Ultra',
+  'blackberry':        'BlackBerry',
+  'razr-v3':           'Motorola Razr V3',
+  'lg-env2':           'LG enV2',
+};
 
 export type HostOption = string | { label: string; url: string };
 
@@ -16,11 +58,19 @@ export interface PhoneMockProps {
   hosts: HostOption[];
   defaultHost?: string;
   path?: string;
+  /** Single-frame mode. Ignored if `frames` is set. */
   frame?: PhoneFrame;
+  /** Picker mode — supplying multiple frames shows a device dropdown. */
+  frames?: PhoneFrame[];
+  /** Initial frame for picker mode. Defaults to first in `frames`. */
+  defaultFrame?: PhoneFrame;
   /** Override the per-frame default scale. */
   scale?: number;
+  /** Hide the host (and device, if any) switcher above the frame. */
   hideSwitcher?: boolean;
+  /** Hide simulated status bar / notch / home indicator overlays. */
   hideChrome?: boolean;
+  /** Controlled host URL (pairs with onHostChange). */
   host?: string;
   onHostChange?: (url: string) => void;
   className?: string;
@@ -28,24 +78,36 @@ export interface PhoneMockProps {
 }
 
 interface FrameSpec {
-  width: number;            // body width
-  height: number;           // body height
-  radius: number;           // body corner radius
+  width: number;
+  height: number;
+  radius: number;
   bodyColor: string;
   bodyHighlight: string;
-  screenX: number;          // screen position in body
+  screenX: number;
   screenY: number;
   screenW: number;
   screenH: number;
   screenRadius: number;
   defaultScale: number;
-  shadow: string;           // body box-shadow color tone
+  shadow: string;
 }
 
 const FRAMES: Record<PhoneFrame, FrameSpec> = {
+  'iphone-16-pro-max': {
+    width: 458, height: 936, radius: 60,
+    bodyColor: '#8a7960', bodyHighlight: '#c8b59a', // Desert Titanium
+    screenX: 11, screenY: 11, screenW: 436, screenH: 914, screenRadius: 49,
+    defaultScale: 0.65, shadow: 'rgba(0,0,0,0.45)',
+  },
+  'iphone-16-pro': {
+    width: 424, height: 870, radius: 58,
+    bodyColor: '#9a9aa3', bodyHighlight: '#cdcdd2', // Natural Titanium
+    screenX: 11, screenY: 11, screenW: 402, screenH: 848, screenRadius: 47,
+    defaultScale: 0.7, shadow: 'rgba(0,0,0,0.4)',
+  },
   'iphone-15-pro': {
     width: 414, height: 836, radius: 56,
-    bodyColor: '#1a1a1c', bodyHighlight: '#3a3a3e',
+    bodyColor: '#1a1a1c', bodyHighlight: '#3a3a3e', // Black Titanium
     screenX: 11, screenY: 11, screenW: 392, screenH: 814, screenRadius: 45,
     defaultScale: 0.7, shadow: 'rgba(0,0,0,0.45)',
   },
@@ -60,6 +122,12 @@ const FRAMES: Record<PhoneFrame, FrameSpec> = {
     bodyColor: '#1f1f23', bodyHighlight: '#3a3a3e',
     screenX: 11, screenY: 11, screenW: 410, screenH: 874, screenRadius: 35,
     defaultScale: 0.7, shadow: 'rgba(0,0,0,0.4)',
+  },
+  'galaxy-s24-ultra': {
+    width: 422, height: 900, radius: 22, // boxier than iPhone
+    bodyColor: '#3a3a40', bodyHighlight: '#6a6a72', // Titanium Black
+    screenX: 8, screenY: 8, screenW: 406, screenH: 884, screenRadius: 18,
+    defaultScale: 0.68, shadow: 'rgba(0,0,0,0.45)',
   },
   'blackberry': {
     width: 340, height: 480, radius: 26,
@@ -81,7 +149,8 @@ const FRAMES: Record<PhoneFrame, FrameSpec> = {
   },
 };
 
-const SPLIT_FRAMES = new Set<PhoneFrame>(['blackberry', 'razr-v3', 'lg-env2', 'iphone-se']);
+const IPHONE_PRO_FAMILY: PhoneFrame[] = ['iphone-15-pro', 'iphone-16-pro', 'iphone-16-pro-max'];
+const ANDROID_PUNCH_HOLE: PhoneFrame[] = ['pixel-8', 'galaxy-s24-ultra'];
 
 function normalizeHosts(hosts: HostOption[]) {
   return hosts.map((h) => (typeof h === 'string' ? { label: h, url: h } : h));
@@ -134,13 +203,10 @@ function Key({
       aria-hidden
       style={{
         width: w, height: h,
-        background: bg,
-        color,
+        background: bg, color,
         borderRadius: radius,
-        display: 'grid',
-        placeItems: 'center',
-        fontSize,
-        fontWeight: bold ? 700 : 500,
+        display: 'grid', placeItems: 'center',
+        fontSize, fontWeight: bold ? 700 : 500,
         fontFamily: 'system-ui, sans-serif',
         boxShadow: '0 1px 0 rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)',
         userSelect: 'none',
@@ -153,10 +219,11 @@ function Key({
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Per-frame "chrome" renderers
+// Per-frame "chrome" renderers (the simulated UI inside the screen)
 // ────────────────────────────────────────────────────────────────────────────
 
-function IPhoneChrome({ screenW, screenH, frame }: { screenW: number; screenH: number; frame: PhoneFrame }) {
+function IPhoneChrome({ screenW, frame }: { screenW: number; frame: PhoneFrame }) {
+  const hasDynamicIsland = IPHONE_PRO_FAMILY.includes(frame);
   return (
     <>
       <div
@@ -177,7 +244,7 @@ function IPhoneChrome({ screenW, screenH, frame }: { screenW: number; screenH: n
           <StatusBarIcons />
         </div>
       </div>
-      {frame === 'iphone-15-pro' && (
+      {hasDynamicIsland && (
         <div
           aria-hidden
           style={{
@@ -189,22 +256,23 @@ function IPhoneChrome({ screenW, screenH, frame }: { screenW: number; screenH: n
           }}
         />
       )}
-      {frame === 'iphone-15-pro' && (
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
-            width: screenW * 0.34, height: 5, borderRadius: 3,
-            background: 'rgba(0,0,0,0.85)',
-            pointerEvents: 'none', zIndex: 2,
-          }}
-        />
-      )}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+          width: screenW * 0.34, height: 5, borderRadius: 3,
+          background: 'rgba(0,0,0,0.85)',
+          pointerEvents: 'none', zIndex: 2,
+        }}
+      />
     </>
   );
 }
 
-function PixelChrome({ screenW }: { screenW: number }) {
+function AndroidChrome({ screenW, frame }: { screenW: number; frame: PhoneFrame }) {
+  const isGalaxy = frame === 'galaxy-s24-ultra';
+  const camTop = isGalaxy ? 8 : 10;
+  const camSize = isGalaxy ? 12 : 14;
   return (
     <>
       <div
@@ -226,8 +294,8 @@ function PixelChrome({ screenW }: { screenW: number }) {
       <div
         aria-hidden
         style={{
-          position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)',
-          width: 14, height: 14, borderRadius: '50%',
+          position: 'absolute', top: camTop, left: '50%', transform: 'translateX(-50%)',
+          width: camSize, height: camSize, borderRadius: '50%',
           background: '#000',
           boxShadow: '0 0 0 1.5px rgba(0,0,0,0.5)',
           pointerEvents: 'none', zIndex: 3,
@@ -246,42 +314,12 @@ function PixelChrome({ screenW }: { screenW: number }) {
   );
 }
 
-function IPhoneSEExtras({ spec }: { spec: FrameSpec }) {
+function IPhoneSEExtras() {
   return (
     <>
-      {/* Speaker grill */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: 30, left: '50%', transform: 'translateX(-50%)',
-          width: 56, height: 5, borderRadius: 999,
-          background: '#070708',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
-        }}
-      />
-      {/* Front camera dot */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: 28, left: '50%', transform: 'translate(-72px, 0)',
-          width: 7, height: 7, borderRadius: '50%',
-          background: '#0a0a0c',
-          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
-        }}
-      />
-      {/* Home button below screen */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          bottom: 14, left: '50%', transform: 'translateX(-50%)',
-          width: 46, height: 46, borderRadius: '50%',
-          background: 'radial-gradient(circle at 30% 30%, #2a2a2e, #0a0a0c)',
-          boxShadow: 'inset 0 0 0 1.5px rgba(255,255,255,0.06), inset 0 -2px 4px rgba(0,0,0,0.4)',
-        }}
-      />
+      <div aria-hidden style={{ position: 'absolute', top: 30, left: '50%', transform: 'translateX(-50%)', width: 56, height: 5, borderRadius: 999, background: '#070708', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }} />
+      <div aria-hidden style={{ position: 'absolute', top: 28, left: '50%', transform: 'translate(-72px, 0)', width: 7, height: 7, borderRadius: '50%', background: '#0a0a0c', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)' }} />
+      <div aria-hidden style={{ position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)', width: 46, height: 46, borderRadius: '50%', background: 'radial-gradient(circle at 30% 30%, #2a2a2e, #0a0a0c)', boxShadow: 'inset 0 0 0 1.5px rgba(255,255,255,0.06), inset 0 -2px 4px rgba(0,0,0,0.4)' }} />
     </>
   );
 }
@@ -296,75 +334,26 @@ function BlackBerryExtras({ spec }: { spec: FrameSpec }) {
   ];
   return (
     <>
-      {/* Carrier strip */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: 8, left: 0, right: 0,
-          height: 14,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          fontFamily: 'system-ui, sans-serif',
-          fontSize: 8, fontWeight: 600, color: '#52525b',
-          letterSpacing: 1,
-        }}
-      >
+      <div aria-hidden style={{ position: 'absolute', top: 8, left: 0, right: 0, height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'system-ui, sans-serif', fontSize: 8, fontWeight: 600, color: '#52525b', letterSpacing: 1 }}>
         <span>● ● ● ●●</span>
         <span style={{ opacity: 0.5 }}>BERRY</span>
         <span>3G</span>
       </div>
-
-      {/* Function row (below screen, above keyboard) */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: spec.screenY + spec.screenH + 4,
-          left: spec.screenX,
-          width: spec.screenW,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 4px',
-        }}
-      >
+      <div aria-hidden style={{ position: 'absolute', top: spec.screenY + spec.screenH + 4, left: spec.screenX, width: spec.screenW, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px' }}>
         <Key label="📞" w={28} h={18} bg="#1d4f23" color="#9ef7a4" fontSize={10} />
         <Key label="≡"  w={22} h={18} bg="#2a2a2e" fontSize={11} />
-        <div
-          aria-hidden
-          style={{
-            width: 18, height: 18, borderRadius: '50%',
-            background: 'radial-gradient(circle at 35% 30%, #c8c8cc, #5a5a5e 60%, #1a1a1c)',
-            boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.4)',
-          }}
-        />
+        <div aria-hidden style={{ width: 18, height: 18, borderRadius: '50%', background: 'radial-gradient(circle at 35% 30%, #c8c8cc, #5a5a5e 60%, #1a1a1c)', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.4)' }} />
         <Key label="↩" w={22} h={18} bg="#2a2a2e" fontSize={11} />
         <Key label="📞" w={28} h={18} bg="#5a1717" color="#ffb5b5" fontSize={10} />
       </div>
-
-      {/* Keyboard */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: kbTop, left: 16, right: 16,
-          display: 'flex', flexDirection: 'column', gap: 6,
-        }}
-      >
+      <div aria-hidden style={{ position: 'absolute', top: kbTop, left: 16, right: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
         {rows.map((row, i) => (
           <div key={i} style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
             {row.map((k, j) => {
               if (k === '___') return <div key={j} style={{ flex: 1, height: 22 }} />;
               const isSpace = i === 3 && j >= 2 && j <= 4;
               return (
-                <Key
-                  key={j}
-                  label={k}
-                  w={isSpace ? 60 : 26}
-                  h={22}
-                  bg="linear-gradient(180deg, #353539, #1d1d20)"
-                  color="#e4e4e7"
-                  fontSize={11}
-                  bold
-                />
+                <Key key={j} label={k} w={isSpace ? 60 : 26} h={22} bg="linear-gradient(180deg, #353539, #1d1d20)" color="#e4e4e7" fontSize={11} bold />
               );
             })}
           </div>
@@ -385,92 +374,23 @@ function RazrExtras({ spec }: { spec: FrameSpec }) {
   ];
   return (
     <>
-      {/* Carrier label */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: 12, left: 0, right: 0, textAlign: 'center',
-          fontFamily: 'monospace',
-          fontSize: 7, fontWeight: 700, color: '#3a3a3e',
-          letterSpacing: 2,
-        }}
-      >
-        MOTO
-      </div>
-
-      {/* Hinge line */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: hingeY, left: -6, right: -6, height: 6,
-          background: 'linear-gradient(180deg, #5a5d62, #2a2d32)',
-          borderRadius: 1,
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 1px 2px rgba(0,0,0,0.3)',
-        }}
-      />
-
-      {/* Navigation row below hinge */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: hingeY + 12, left: 16, right: 16,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}
-      >
+      <div aria-hidden style={{ position: 'absolute', top: 12, left: 0, right: 0, textAlign: 'center', fontFamily: 'monospace', fontSize: 7, fontWeight: 700, color: '#3a3a3e', letterSpacing: 2 }}>MOTO</div>
+      <div aria-hidden style={{ position: 'absolute', top: hingeY, left: -6, right: -6, height: 6, background: 'linear-gradient(180deg, #5a5d62, #2a2d32)', borderRadius: 1, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 1px 2px rgba(0,0,0,0.3)' }} />
+      <div aria-hidden style={{ position: 'absolute', top: hingeY + 12, left: 16, right: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Key label="◀" w={24} h={14} bg="#5a5d62" color="#1a1d22" fontSize={9} />
-        <div
-          aria-hidden
-          style={{
-            width: 24, height: 14, borderRadius: 7,
-            background: 'radial-gradient(circle at 30% 30%, #e8eaee, #6a6d72)',
-            boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.3)',
-          }}
-        />
+        <div aria-hidden style={{ width: 24, height: 14, borderRadius: 7, background: 'radial-gradient(circle at 30% 30%, #e8eaee, #6a6d72)', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.3)' }} />
         <Key label="▶" w={24} h={14} bg="#5a5d62" color="#1a1d22" fontSize={9} />
       </div>
-
-      {/* Call / End / Clear */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: hingeY + 30, left: 14, right: 14,
-          display: 'flex', justifyContent: 'space-between',
-        }}
-      >
+      <div aria-hidden style={{ position: 'absolute', top: hingeY + 30, left: 14, right: 14, display: 'flex', justifyContent: 'space-between' }}>
         <Key label="📞" w={48} h={16} bg="#1d4f23" color="#9ef7a4" fontSize={9} radius={2} />
         <Key label="✕"  w={36} h={16} bg="#3a3d42" color="#d4d4d8" fontSize={10} radius={2} />
         <Key label="🔚" w={48} h={16} bg="#5a1717" color="#ffb5b5" fontSize={9} radius={2} />
       </div>
-
-      {/* Dial pad */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: dialTop + 24, left: 14, right: 14,
-          display: 'flex', flexDirection: 'column', gap: 4,
-        }}
-      >
+      <div aria-hidden style={{ position: 'absolute', top: dialTop + 24, left: 14, right: 14, display: 'flex', flexDirection: 'column', gap: 4 }}>
         {dialKeys.map((row, i) => (
           <div key={i} style={{ display: 'flex', gap: 4, justifyContent: 'space-between' }}>
             {row.map((k, j) => (
-              <div
-                key={j}
-                style={{
-                  flex: 1, height: 30,
-                  background: 'linear-gradient(180deg, #b8bcc2, #6a6d72)',
-                  borderRadius: 2,
-                  display: 'grid', placeItems: 'center',
-                  fontSize: 14, fontWeight: 700, fontFamily: 'system-ui, sans-serif',
-                  color: '#1a1d22',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 1px rgba(0,0,0,0.2)',
-                  textShadow: '0 0 8px rgba(80,160,255,0.6)',
-                }}
-              >
+              <div key={j} style={{ flex: 1, height: 30, background: 'linear-gradient(180deg, #b8bcc2, #6a6d72)', borderRadius: 2, display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 700, fontFamily: 'system-ui, sans-serif', color: '#1a1d22', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.4), 0 1px 1px rgba(0,0,0,0.2)', textShadow: '0 0 8px rgba(80,160,255,0.6)' }}>
                 {k}
               </div>
             ))}
@@ -482,7 +402,6 @@ function RazrExtras({ spec }: { spec: FrameSpec }) {
 }
 
 function EnV2Extras({ spec }: { spec: FrameSpec }) {
-  // Right half = keyboard. Screen takes left half.
   const kbLeft = spec.screenX + spec.screenW + 16;
   const kbWidth = spec.width - kbLeft - 16;
   const rows: string[][] = [
@@ -493,75 +412,21 @@ function EnV2Extras({ spec }: { spec: FrameSpec }) {
   ];
   return (
     <>
-      {/* Hinge line (horizontal across top, suggesting flip) */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: 6, left: 14, right: 14, height: 3,
-          background: 'linear-gradient(180deg, #52525a, #2a2a2e)',
-          borderRadius: 1,
-          opacity: 0.6,
-        }}
-      />
-
-      {/* D-pad / function buttons to the right of screen, top */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          left: kbLeft,
-          top: spec.screenY,
-          width: kbWidth,
-          height: 36,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 4px',
-        }}
-      >
+      <div aria-hidden style={{ position: 'absolute', top: 6, left: 14, right: 14, height: 3, background: 'linear-gradient(180deg, #52525a, #2a2a2e)', borderRadius: 1, opacity: 0.6 }} />
+      <div aria-hidden style={{ position: 'absolute', left: kbLeft, top: spec.screenY, width: kbWidth, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 4px' }}>
         <Key label="📞" w={44} h={22} bg="#1d4f23" color="#9ef7a4" fontSize={10} radius={3} />
-        <div
-          aria-hidden
-          style={{
-            width: 50, height: 26, borderRadius: 13,
-            background: 'radial-gradient(circle at 30% 30%, #6a6d72, #1a1d22)',
-            boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.05)',
-            position: 'relative',
-          }}
-        >
+        <div aria-hidden style={{ width: 50, height: 26, borderRadius: 13, background: 'radial-gradient(circle at 30% 30%, #6a6d72, #1a1d22)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.05)', position: 'relative' }}>
           <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', color: '#a1a1aa', fontSize: 10 }}>OK</div>
         </div>
         <Key label="📞" w={44} h={22} bg="#5a1717" color="#ffb5b5" fontSize={10} radius={3} />
       </div>
-
-      {/* QWERTY keyboard */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          left: kbLeft, top: spec.screenY + 42,
-          width: kbWidth,
-          display: 'flex', flexDirection: 'column', gap: 3,
-        }}
-      >
+      <div aria-hidden style={{ position: 'absolute', left: kbLeft, top: spec.screenY + 42, width: kbWidth, display: 'flex', flexDirection: 'column', gap: 3 }}>
         {rows.map((row, i) => (
           <div key={i} style={{ display: 'flex', gap: 2.5, justifyContent: 'space-between' }}>
             {row.map((k, j) => {
               const isSpace = k === 'spc';
               return (
-                <div
-                  key={j}
-                  style={{
-                    flex: isSpace ? 1.4 : 1,
-                    height: 22,
-                    background: 'linear-gradient(180deg, #3a3a3f, #1d1d20)',
-                    borderRadius: 3,
-                    display: 'grid', placeItems: 'center',
-                    fontSize: 10, fontWeight: 600,
-                    fontFamily: 'system-ui, sans-serif',
-                    color: isSpace ? 'transparent' : '#e4e4e7',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 1px rgba(0,0,0,0.3)',
-                  }}
-                >
+                <div key={j} style={{ flex: isSpace ? 1.4 : 1, height: 22, background: 'linear-gradient(180deg, #3a3a3f, #1d1d20)', borderRadius: 3, display: 'grid', placeItems: 'center', fontSize: 10, fontWeight: 600, fontFamily: 'system-ui, sans-serif', color: isSpace ? 'transparent' : '#e4e4e7', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 1px rgba(0,0,0,0.3)' }}>
                   {isSpace ? '' : k}
                 </div>
               );
@@ -573,12 +438,10 @@ function EnV2Extras({ spec }: { spec: FrameSpec }) {
   );
 }
 
-// Decorative side buttons for modern smartphones only
 function SideButtons({ spec }: { spec: FrameSpec }) {
   const make = (side: 'left' | 'right', top: number, h: number): CSSProperties => ({
     position: 'absolute',
-    [side]: -2.5,
-    top,
+    [side]: -2.5, top,
     width: 3, height: h,
     background: `linear-gradient(90deg, ${spec.bodyHighlight}, ${spec.bodyColor})`,
     borderRadius: 1.5,
@@ -595,14 +458,68 @@ function SideButtons({ spec }: { spec: FrameSpec }) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Main
+// Switcher pill (shared visual for both Device and Host dropdowns)
+// ────────────────────────────────────────────────────────────────────────────
+
+function SwitcherPill({
+  label, value, onChange, options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { label: string; value: string }[];
+}) {
+  return (
+    <div
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        background: 'rgba(10,10,10,0.92)', color: '#fff',
+        padding: '6px 10px 6px 14px', borderRadius: 999,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontSize: 13,
+        boxShadow: '0 4px 14px -4px rgba(0,0,0,0.3)',
+      }}
+    >
+      <span style={{ opacity: 0.55, fontWeight: 500 }}>{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          appearance: 'none',
+          background: 'rgba(255,255,255,0.08)',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 999,
+          padding: '4px 28px 4px 12px',
+          fontSize: 13, fontWeight: 500,
+          outline: 'none', cursor: 'pointer',
+          backgroundImage:
+            "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>\")",
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'right 10px center',
+        }}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value} style={{ color: '#000' }}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Main component
 // ────────────────────────────────────────────────────────────────────────────
 
 export default function PhoneMock({
   hosts,
   defaultHost,
   path = '/',
-  frame = 'iphone-15-pro',
+  frame,
+  frames,
+  defaultFrame,
   scale,
   hideSwitcher = false,
   hideChrome = false,
@@ -611,25 +528,34 @@ export default function PhoneMock({
   className,
   style,
 }: PhoneMockProps) {
-  const options = useMemo(() => normalizeHosts(hosts), [hosts]);
+  const hostOptions = useMemo(() => normalizeHosts(hosts), [hosts]);
   const [internalHost, setInternalHost] = useState<string>(
-    defaultHost ?? options[0]?.url ?? ''
+    defaultHost ?? hostOptions[0]?.url ?? ''
   );
   const currentHost = host ?? internalHost;
 
-  const handleChange = (url: string) => {
+  const handleHostChange = (url: string) => {
     if (onHostChange) onHostChange(url);
     if (host === undefined) setInternalHost(url);
   };
 
-  const spec = FRAMES[frame];
+  const framePickerEnabled = !!frames && frames.length > 1;
+  const [internalFrame, setInternalFrame] = useState<PhoneFrame>(
+    defaultFrame ?? frames?.[0] ?? frame ?? 'iphone-15-pro'
+  );
+  const currentFrame: PhoneFrame = framePickerEnabled
+    ? internalFrame
+    : (frame ?? frames?.[0] ?? 'iphone-15-pro');
+
+  const spec = FRAMES[currentFrame];
   const effectiveScale = scale ?? spec.defaultScale;
   const url = joinUrl(currentHost, path);
 
   const outerWidth = spec.width * effectiveScale;
   const outerHeight = spec.height * effectiveScale;
 
-  const isModernSmartphone = frame === 'iphone-15-pro' || frame === 'pixel-8';
+  const isModernSmartphone =
+    IPHONE_PRO_FAMILY.includes(currentFrame) || ANDROID_PUNCH_HOLE.includes(currentFrame);
 
   return (
     <div
@@ -643,50 +569,28 @@ export default function PhoneMock({
       }}
     >
       {!hideSwitcher && (
-        <div
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: 'rgba(10,10,10,0.92)', color: '#fff',
-            padding: '6px 10px 6px 14px',
-            borderRadius: 999,
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            fontSize: 13,
-            boxShadow: '0 4px 14px -4px rgba(0,0,0,0.3)',
-          }}
-        >
-          <span style={{ opacity: 0.55, fontWeight: 500 }}>Host</span>
-          <select
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {framePickerEnabled && (
+            <SwitcherPill
+              label="Device"
+              value={currentFrame}
+              onChange={(v) => setInternalFrame(v as PhoneFrame)}
+              options={frames!.map((f) => ({ label: FRAME_LABELS[f], value: f }))}
+            />
+          )}
+          <SwitcherPill
+            label="Host"
             value={currentHost}
-            onChange={(e) => handleChange(e.target.value)}
-            style={{
-              appearance: 'none',
-              background: 'rgba(255,255,255,0.08)',
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 999,
-              padding: '4px 28px 4px 12px',
-              fontSize: 13, fontWeight: 500,
-              outline: 'none', cursor: 'pointer',
-              backgroundImage:
-                "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>\")",
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 10px center',
-            }}
-          >
-            {options.map((o) => (
-              <option key={o.url} value={o.url} style={{ color: '#000' }}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+            onChange={handleHostChange}
+            options={hostOptions.map((o) => ({ label: o.label, value: o.url }))}
+          />
         </div>
       )}
 
       <div
-        data-phone-frame={frame}
+        data-phone-frame={currentFrame}
         style={{
-          width: outerWidth,
-          height: outerHeight,
+          width: outerWidth, height: outerHeight,
           transition: 'width 220ms ease, height 220ms ease',
           position: 'relative',
         }}
@@ -699,7 +603,6 @@ export default function PhoneMock({
             width: spec.width, height: spec.height,
           }}
         >
-          {/* Body */}
           <div
             style={{
               width: spec.width, height: spec.height,
@@ -714,10 +617,8 @@ export default function PhoneMock({
               position: 'relative',
             }}
           >
-            {/* Side buttons on modern smartphones */}
             {isModernSmartphone && <SideButtons spec={spec} />}
 
-            {/* Screen */}
             <div
               style={{
                 position: 'absolute',
@@ -733,26 +634,21 @@ export default function PhoneMock({
                 key={url}
                 src={url}
                 title={`PhoneMock — ${url}`}
-                style={{
-                  width: '100%', height: '100%',
-                  border: 'none', display: 'block', background: '#fff',
-                }}
+                style={{ width: '100%', height: '100%', border: 'none', display: 'block', background: '#fff' }}
               />
 
-              {/* In-screen chrome (status bar / notch / home indicator) */}
-              {!hideChrome && (frame === 'iphone-15-pro') && (
-                <IPhoneChrome screenW={spec.screenW} screenH={spec.screenH} frame={frame} />
+              {!hideChrome && IPHONE_PRO_FAMILY.includes(currentFrame) && (
+                <IPhoneChrome screenW={spec.screenW} frame={currentFrame} />
               )}
-              {!hideChrome && frame === 'pixel-8' && (
-                <PixelChrome screenW={spec.screenW} />
+              {!hideChrome && ANDROID_PUNCH_HOLE.includes(currentFrame) && (
+                <AndroidChrome screenW={spec.screenW} frame={currentFrame} />
               )}
             </div>
 
-            {/* Hardware extras outside the screen */}
-            {frame === 'iphone-se' && <IPhoneSEExtras spec={spec} />}
-            {frame === 'blackberry'  && <BlackBerryExtras spec={spec} />}
-            {frame === 'razr-v3'     && <RazrExtras spec={spec} />}
-            {frame === 'lg-env2'     && <EnV2Extras spec={spec} />}
+            {currentFrame === 'iphone-se'    && <IPhoneSEExtras />}
+            {currentFrame === 'blackberry'   && <BlackBerryExtras spec={spec} />}
+            {currentFrame === 'razr-v3'      && <RazrExtras spec={spec} />}
+            {currentFrame === 'lg-env2'      && <EnV2Extras spec={spec} />}
           </div>
         </div>
       </div>
