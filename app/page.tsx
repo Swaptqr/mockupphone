@@ -11,14 +11,29 @@ import PhoneMock, { type PhoneFrame } from 'mockupphone';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const DEVICES: { id: PhoneFrame; label: string; category: 'modern' | 'retro' }[] = [
-  // ── Modern ─────────────────────────────────────────────────────────────────
+  // ── iPhones ───────────────────────────────────────────────────────────────
+  { id: 'iphone-17-pro-max', label: 'iPhone 17 Pro Max', category: 'modern' },
+  { id: 'iphone-17-pro',     label: 'iPhone 17 Pro',     category: 'modern' },
+  { id: 'iphone-17-air',     label: 'iPhone 17 Air',     category: 'modern' },
+  { id: 'iphone-17',         label: 'iPhone 17',         category: 'modern' },
+  { id: 'iphone-17e',        label: 'iPhone 17e',        category: 'modern' },
   { id: 'iphone-16-pro-max', label: 'iPhone 16 Pro Max', category: 'modern' },
   { id: 'iphone-16-pro',     label: 'iPhone 16 Pro',     category: 'modern' },
   { id: 'iphone-15-pro',     label: 'iPhone 15 Pro',     category: 'modern' },
-  { id: 'pixel-8',           label: 'Pixel 8',           category: 'modern' },
-  { id: 'galaxy-s24-ultra',  label: 'Galaxy S24 Ultra',  category: 'modern' },
   { id: 'iphone-se',         label: 'iPhone SE',         category: 'modern' },
-  // ── Retro ──────────────────────────────────────────────────────────────────
+  // ── Android phones ────────────────────────────────────────────────────────
+  { id: 'pixel-10-pro-xl',   label: 'Pixel 10 Pro XL',   category: 'modern' },
+  { id: 'pixel-10-pro',      label: 'Pixel 10 Pro',      category: 'modern' },
+  { id: 'pixel-10',          label: 'Pixel 10',          category: 'modern' },
+  { id: 'pixel-8',           label: 'Pixel 8',           category: 'modern' },
+  { id: 'galaxy-s25-ultra',  label: 'Galaxy S25 Ultra',  category: 'modern' },
+  { id: 'galaxy-s25-plus',   label: 'Galaxy S25+',       category: 'modern' },
+  { id: 'galaxy-s25',        label: 'Galaxy S25',        category: 'modern' },
+  { id: 'galaxy-s24-ultra',  label: 'Galaxy S24 Ultra',  category: 'modern' },
+  // ── Tablets ───────────────────────────────────────────────────────────────
+  { id: 'ipad-pro-11',       label: 'iPad Pro 11"',      category: 'modern' },
+  { id: 'galaxy-tab-s9',     label: 'Galaxy Tab S9',     category: 'modern' },
+  // ── Retro ─────────────────────────────────────────────────────────────────
   { id: 'blackberry',        label: 'BlackBerry',        category: 'retro' },
   { id: 'razr-v3',           label: 'Motorola Razr V3',  category: 'retro' },
   { id: 'lg-env2',           label: 'LG enV2',           category: 'retro' },
@@ -63,7 +78,15 @@ export default function Home() {
         }}
       >
         {/* Left rail */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: 24, position: 'sticky', top: 32 }}>
+        <aside
+          style={{
+            display: 'flex', flexDirection: 'column', gap: 24,
+            position: 'sticky', top: 32,
+            maxHeight: 'calc(100vh - 64px)',
+            overflowY: 'auto',
+            paddingRight: 8,
+          }}
+        >
           <header>
             <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.4, color: '#a1a1aa', fontWeight: 600 }}>
               Component
@@ -176,23 +199,25 @@ export default function Home() {
                   overflow: 'auto', fontSize: 11.5, lineHeight: 1.55,
                   margin: '8px 0 0',
                 }}
-              >{`import PhoneMock from 'mockupphone';
+              >{`import PhoneMock, {
+  IPhoneMockup, AndroidMockup,
+  IPadMockup,   AndroidTabMockup,
+} from 'mockupphone';
 
 // Single device
+<PhoneMock frame="iphone-17-pro" hosts={[...]} />
+
+// Built-in device picker (any frames)
 <PhoneMock
-  frame="iphone-16-pro"
-  hosts={[
-    { label: 'local', url: 'http://localhost:3000' },
-    { label: 'prod',  url: 'https://myapp.com' },
-  ]}
-  path="/landing"
+  frames={['iphone-17-pro', 'pixel-10', 'razr-v3']}
+  hosts={[...]}
 />
 
-// Built-in device picker
-<PhoneMock
-  frames={['iphone-16-pro', 'pixel-8', 'razr-v3']}
-  hosts={[...]}
-/>`}</pre>
+// Family-locked components — picker scoped to that family
+<IPhoneMockup     hosts={[...]} />  // iPhone 17 → iPhone SE
+<AndroidMockup    hosts={[...]} />  // Pixel + Galaxy
+<IPadMockup       hosts={[...]} />  // iPad Pro
+<AndroidTabMockup hosts={[...]} />  // Galaxy Tab`}</pre>
             )}
           </section>
 

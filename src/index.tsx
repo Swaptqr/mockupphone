@@ -5,31 +5,83 @@ import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 // ─────────────────────────────────────────────────────────────────────────────
 //  Frame catalog
 //
-//  To add a new device: drop a new entry in FRAMES below, add its id to the
-//  PhoneFrame type union, and (if it has split hardware below/beside the
-//  screen) plug into the corresponding extras renderer at the bottom.
+//  To add a new device:
+//    1. Add its id to the PhoneFrame type union.
+//    2. Add an entry to the FRAMES record (dimensions, color, default scale).
+//    3. Add its label to FRAME_LABELS.
+//    4. Add it to the appropriate family array (IPHONE_FRAMES, etc.).
+//    5. If it has hardware below the screen (keyboard, dial pad, home button),
+//       plug into the matching extras renderer at the bottom.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type PhoneFrame =
-  // Modern
+  // iPhones (newest first)
+  | 'iphone-17-pro-max'
+  | 'iphone-17-pro'
+  | 'iphone-17-air'
+  | 'iphone-17'
+  | 'iphone-17e'
   | 'iphone-16-pro-max'
   | 'iphone-16-pro'
   | 'iphone-15-pro'
   | 'iphone-se'
+  // Android phones
+  | 'pixel-10-pro-xl'
+  | 'pixel-10-pro'
+  | 'pixel-10'
   | 'pixel-8'
+  | 'galaxy-s25-ultra'
+  | 'galaxy-s25-plus'
+  | 'galaxy-s25'
   | 'galaxy-s24-ultra'
+  // Tablets
+  | 'ipad-pro-11'
+  | 'galaxy-tab-s9'
   // Retro
   | 'blackberry'
   | 'razr-v3'
   | 'lg-env2';
 
-export const MODERN_FRAMES: PhoneFrame[] = [
+/** All iPhones. Drives <IPhoneMockup>. */
+export const IPHONE_FRAMES: PhoneFrame[] = [
+  'iphone-17-pro-max',
+  'iphone-17-pro',
+  'iphone-17-air',
+  'iphone-17',
+  'iphone-17e',
   'iphone-16-pro-max',
   'iphone-16-pro',
   'iphone-15-pro',
-  'pixel-8',
-  'galaxy-s24-ultra',
   'iphone-se',
+];
+
+/** All Android phones. Drives <AndroidMockup>. */
+export const ANDROID_PHONE_FRAMES: PhoneFrame[] = [
+  'pixel-10-pro-xl',
+  'pixel-10-pro',
+  'pixel-10',
+  'pixel-8',
+  'galaxy-s25-ultra',
+  'galaxy-s25-plus',
+  'galaxy-s25',
+  'galaxy-s24-ultra',
+];
+
+/** All iPads. Drives <IPadMockup>. */
+export const IPAD_FRAMES: PhoneFrame[] = [
+  'ipad-pro-11',
+];
+
+/** All Android tablets. Drives <AndroidTabMockup>. */
+export const ANDROID_TAB_FRAMES: PhoneFrame[] = [
+  'galaxy-tab-s9',
+];
+
+export const MODERN_FRAMES: PhoneFrame[] = [
+  ...IPHONE_FRAMES,
+  ...ANDROID_PHONE_FRAMES,
+  ...IPAD_FRAMES,
+  ...ANDROID_TAB_FRAMES,
 ];
 
 export const RETRO_FRAMES: PhoneFrame[] = [
@@ -41,12 +93,25 @@ export const RETRO_FRAMES: PhoneFrame[] = [
 export const ALL_FRAMES: PhoneFrame[] = [...MODERN_FRAMES, ...RETRO_FRAMES];
 
 export const FRAME_LABELS: Record<PhoneFrame, string> = {
+  'iphone-17-pro-max': 'iPhone 17 Pro Max',
+  'iphone-17-pro':     'iPhone 17 Pro',
+  'iphone-17-air':     'iPhone 17 Air',
+  'iphone-17':         'iPhone 17',
+  'iphone-17e':        'iPhone 17e',
   'iphone-16-pro-max': 'iPhone 16 Pro Max',
   'iphone-16-pro':     'iPhone 16 Pro',
   'iphone-15-pro':     'iPhone 15 Pro',
   'iphone-se':         'iPhone SE',
+  'pixel-10-pro-xl':   'Pixel 10 Pro XL',
+  'pixel-10-pro':      'Pixel 10 Pro',
+  'pixel-10':          'Pixel 10',
   'pixel-8':           'Pixel 8',
+  'galaxy-s25-ultra':  'Galaxy S25 Ultra',
+  'galaxy-s25-plus':   'Galaxy S25+',
+  'galaxy-s25':        'Galaxy S25',
   'galaxy-s24-ultra':  'Galaxy S24 Ultra',
+  'ipad-pro-11':       'iPad Pro 11"',
+  'galaxy-tab-s9':     'Galaxy Tab S9',
   'blackberry':        'BlackBerry',
   'razr-v3':           'Motorola Razr V3',
   'lg-env2':           'LG enV2',
@@ -93,17 +158,49 @@ interface FrameSpec {
 }
 
 const FRAMES: Record<PhoneFrame, FrameSpec> = {
+  // ── iPhone 17 family ─────────────────────────────────────────────────────
+  'iphone-17-pro-max': {
+    width: 466, height: 950, radius: 60,
+    bodyColor: '#e8e8eb', bodyHighlight: '#ffffff', // White Titanium
+    screenX: 11, screenY: 11, screenW: 444, screenH: 928, screenRadius: 49,
+    defaultScale: 0.6, shadow: 'rgba(0,0,0,0.4)',
+  },
+  'iphone-17-pro': {
+    width: 430, height: 882, radius: 58,
+    bodyColor: '#c95e3a', bodyHighlight: '#e88a6a', // Cosmic Orange
+    screenX: 11, screenY: 11, screenW: 408, screenH: 860, screenRadius: 47,
+    defaultScale: 0.66, shadow: 'rgba(0,0,0,0.45)',
+  },
+  'iphone-17-air': {
+    width: 432, height: 892, radius: 60,
+    bodyColor: '#b8c8d8', bodyHighlight: '#dce6f0', // Silver Sky
+    screenX: 11, screenY: 11, screenW: 410, screenH: 870, screenRadius: 49,
+    defaultScale: 0.65, shadow: 'rgba(0,0,0,0.35)',
+  },
+  'iphone-17': {
+    width: 414, height: 850, radius: 55,
+    bodyColor: '#b8d4e8', bodyHighlight: '#dce8f4', // Sky blue
+    screenX: 11, screenY: 11, screenW: 392, screenH: 828, screenRadius: 44,
+    defaultScale: 0.7, shadow: 'rgba(0,0,0,0.4)',
+  },
+  'iphone-17e': {
+    width: 410, height: 850, radius: 50,
+    bodyColor: '#2a2a32', bodyHighlight: '#4a4a52', // Midnight
+    screenX: 11, screenY: 11, screenW: 388, screenH: 828, screenRadius: 39,
+    defaultScale: 0.7, shadow: 'rgba(0,0,0,0.45)',
+  },
+  // ── iPhone 16 family ─────────────────────────────────────────────────────
   'iphone-16-pro-max': {
     width: 458, height: 936, radius: 60,
     bodyColor: '#8a7960', bodyHighlight: '#c8b59a', // Desert Titanium
     screenX: 11, screenY: 11, screenW: 436, screenH: 914, screenRadius: 49,
-    defaultScale: 0.65, shadow: 'rgba(0,0,0,0.45)',
+    defaultScale: 0.62, shadow: 'rgba(0,0,0,0.45)',
   },
   'iphone-16-pro': {
     width: 424, height: 870, radius: 58,
     bodyColor: '#9a9aa3', bodyHighlight: '#cdcdd2', // Natural Titanium
     screenX: 11, screenY: 11, screenW: 402, screenH: 848, screenRadius: 47,
-    defaultScale: 0.7, shadow: 'rgba(0,0,0,0.4)',
+    defaultScale: 0.68, shadow: 'rgba(0,0,0,0.4)',
   },
   'iphone-15-pro': {
     width: 414, height: 836, radius: 56,
@@ -117,18 +214,70 @@ const FRAMES: Record<PhoneFrame, FrameSpec> = {
     screenX: 14, screenY: 60, screenW: 347, screenH: 547, screenRadius: 4,
     defaultScale: 0.8, shadow: 'rgba(0,0,0,0.42)',
   },
-  'pixel-8': {
-    width: 432, height: 896, radius: 46,
-    bodyColor: '#1f1f23', bodyHighlight: '#3a3a3e',
-    screenX: 11, screenY: 11, screenW: 410, screenH: 874, screenRadius: 35,
+  // ── Pixel ────────────────────────────────────────────────────────────────
+  'pixel-10-pro-xl': {
+    width: 458, height: 942, radius: 48,
+    bodyColor: '#ede8e0', bodyHighlight: '#ffffff', // Porcelain
+    screenX: 11, screenY: 11, screenW: 436, screenH: 920, screenRadius: 37,
+    defaultScale: 0.62, shadow: 'rgba(0,0,0,0.4)',
+  },
+  'pixel-10-pro': {
+    width: 434, height: 902, radius: 46,
+    bodyColor: '#6a7252', bodyHighlight: '#9ba483', // Hazel
+    screenX: 11, screenY: 11, screenW: 412, screenH: 880, screenRadius: 35,
+    defaultScale: 0.66, shadow: 'rgba(0,0,0,0.4)',
+  },
+  'pixel-10': {
+    width: 416, height: 870, radius: 44,
+    bodyColor: '#3a4a7a', bodyHighlight: '#6a7aa8', // Indigo
+    screenX: 11, screenY: 11, screenW: 394, screenH: 848, screenRadius: 33,
     defaultScale: 0.7, shadow: 'rgba(0,0,0,0.4)',
   },
+  'pixel-8': {
+    width: 432, height: 896, radius: 46,
+    bodyColor: '#1f1f23', bodyHighlight: '#3a3a3e', // Obsidian
+    screenX: 11, screenY: 11, screenW: 410, screenH: 874, screenRadius: 35,
+    defaultScale: 0.68, shadow: 'rgba(0,0,0,0.4)',
+  },
+  // ── Galaxy ───────────────────────────────────────────────────────────────
+  'galaxy-s25-ultra': {
+    width: 430, height: 910, radius: 28, // softer corners than S24 Ultra
+    bodyColor: '#c8c8d0', bodyHighlight: '#e8e8ec', // Titanium Whitesilver
+    screenX: 8, screenY: 8, screenW: 414, screenH: 894, screenRadius: 22,
+    defaultScale: 0.65, shadow: 'rgba(0,0,0,0.45)',
+  },
+  'galaxy-s25-plus': {
+    width: 408, height: 872, radius: 32,
+    bodyColor: '#1a2540', bodyHighlight: '#3a4560', // Navy
+    screenX: 11, screenY: 11, screenW: 386, screenH: 850, screenRadius: 22,
+    defaultScale: 0.68, shadow: 'rgba(0,0,0,0.4)',
+  },
+  'galaxy-s25': {
+    width: 388, height: 822, radius: 30,
+    bodyColor: '#a8c8a8', bodyHighlight: '#d0e0d0', // Mint
+    screenX: 11, screenY: 11, screenW: 366, screenH: 800, screenRadius: 20,
+    defaultScale: 0.72, shadow: 'rgba(0,0,0,0.35)',
+  },
   'galaxy-s24-ultra': {
-    width: 422, height: 900, radius: 22, // boxier than iPhone
+    width: 422, height: 900, radius: 22,
     bodyColor: '#3a3a40', bodyHighlight: '#6a6a72', // Titanium Black
     screenX: 8, screenY: 8, screenW: 406, screenH: 884, screenRadius: 18,
-    defaultScale: 0.68, shadow: 'rgba(0,0,0,0.45)',
+    defaultScale: 0.66, shadow: 'rgba(0,0,0,0.45)',
   },
+  // ── Tablets ──────────────────────────────────────────────────────────────
+  'ipad-pro-11': {
+    width: 860, height: 1230, radius: 28,
+    bodyColor: '#0e0e10', bodyHighlight: '#3a3a3e', // Space Black
+    screenX: 14, screenY: 14, screenW: 832, screenH: 1202, screenRadius: 18,
+    defaultScale: 0.4, shadow: 'rgba(0,0,0,0.5)',
+  },
+  'galaxy-tab-s9': {
+    width: 840, height: 1316, radius: 16,
+    bodyColor: '#3a3a40', bodyHighlight: '#6a6a72',
+    screenX: 12, screenY: 12, screenW: 816, screenH: 1292, screenRadius: 10,
+    defaultScale: 0.4, shadow: 'rgba(0,0,0,0.45)',
+  },
+  // ── Retro ────────────────────────────────────────────────────────────────
   'blackberry': {
     width: 340, height: 480, radius: 26,
     bodyColor: '#1a1a1d', bodyHighlight: '#3a3a3f',
@@ -149,8 +298,33 @@ const FRAMES: Record<PhoneFrame, FrameSpec> = {
   },
 };
 
-const IPHONE_PRO_FAMILY: PhoneFrame[] = ['iphone-15-pro', 'iphone-16-pro', 'iphone-16-pro-max'];
-const ANDROID_PUNCH_HOLE: PhoneFrame[] = ['pixel-8', 'galaxy-s24-ultra'];
+// Frames that get the iPhone-style chrome (status bar / home indicator).
+const IPHONE_CHROME_FRAMES: PhoneFrame[] = [
+  'iphone-17-pro-max', 'iphone-17-pro', 'iphone-17-air', 'iphone-17', 'iphone-17e',
+  'iphone-16-pro-max', 'iphone-16-pro', 'iphone-15-pro',
+  'ipad-pro-11',
+];
+
+// Subset that ALSO gets a Dynamic Island. (iPad and SE excluded.)
+const HAS_DYNAMIC_ISLAND: PhoneFrame[] = [
+  'iphone-17-pro-max', 'iphone-17-pro', 'iphone-17-air', 'iphone-17', 'iphone-17e',
+  'iphone-16-pro-max', 'iphone-16-pro', 'iphone-15-pro',
+];
+
+// Frames that get the Android-style chrome (punch-hole camera).
+const ANDROID_CHROME_FRAMES: PhoneFrame[] = [
+  'pixel-10-pro-xl', 'pixel-10-pro', 'pixel-10', 'pixel-8',
+  'galaxy-s25-ultra', 'galaxy-s25-plus', 'galaxy-s25', 'galaxy-s24-ultra',
+  'galaxy-tab-s9',
+];
+
+// Frames that get decorative volume / power side buttons.
+const HAS_SIDE_BUTTONS: PhoneFrame[] = [
+  'iphone-17-pro-max', 'iphone-17-pro', 'iphone-17-air', 'iphone-17', 'iphone-17e',
+  'iphone-16-pro-max', 'iphone-16-pro', 'iphone-15-pro',
+  'pixel-10-pro-xl', 'pixel-10-pro', 'pixel-10', 'pixel-8',
+  'galaxy-s25-ultra', 'galaxy-s25-plus', 'galaxy-s25', 'galaxy-s24-ultra',
+];
 
 function normalizeHosts(hosts: HostOption[]) {
   return hosts.map((h) => (typeof h === 'string' ? { label: h, url: h } : h));
@@ -223,7 +397,7 @@ function Key({
 // ────────────────────────────────────────────────────────────────────────────
 
 function IPhoneChrome({ screenW, frame }: { screenW: number; frame: PhoneFrame }) {
-  const hasDynamicIsland = IPHONE_PRO_FAMILY.includes(frame);
+  const hasIsland = HAS_DYNAMIC_ISLAND.includes(frame);
   return (
     <>
       <div
@@ -244,7 +418,7 @@ function IPhoneChrome({ screenW, frame }: { screenW: number; frame: PhoneFrame }
           <StatusBarIcons />
         </div>
       </div>
-      {hasDynamicIsland && (
+      {hasIsland && (
         <div
           aria-hidden
           style={{
@@ -270,7 +444,7 @@ function IPhoneChrome({ screenW, frame }: { screenW: number; frame: PhoneFrame }
 }
 
 function AndroidChrome({ screenW, frame }: { screenW: number; frame: PhoneFrame }) {
-  const isGalaxy = frame === 'galaxy-s24-ultra';
+  const isGalaxy = frame.startsWith('galaxy-');
   const camTop = isGalaxy ? 8 : 10;
   const camSize = isGalaxy ? 12 : 14;
   return (
@@ -458,7 +632,7 @@ function SideButtons({ spec }: { spec: FrameSpec }) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Switcher pill (shared visual for both Device and Host dropdowns)
+// Switcher pill
 // ────────────────────────────────────────────────────────────────────────────
 
 function SwitcherPill({
@@ -541,11 +715,11 @@ export default function PhoneMock({
 
   const framePickerEnabled = !!frames && frames.length > 1;
   const [internalFrame, setInternalFrame] = useState<PhoneFrame>(
-    defaultFrame ?? frames?.[0] ?? frame ?? 'iphone-15-pro'
+    defaultFrame ?? frames?.[0] ?? frame ?? 'iphone-17-pro'
   );
   const currentFrame: PhoneFrame = framePickerEnabled
     ? internalFrame
-    : (frame ?? frames?.[0] ?? 'iphone-15-pro');
+    : (frame ?? frames?.[0] ?? 'iphone-17-pro');
 
   const spec = FRAMES[currentFrame];
   const effectiveScale = scale ?? spec.defaultScale;
@@ -553,9 +727,6 @@ export default function PhoneMock({
 
   const outerWidth = spec.width * effectiveScale;
   const outerHeight = spec.height * effectiveScale;
-
-  const isModernSmartphone =
-    IPHONE_PRO_FAMILY.includes(currentFrame) || ANDROID_PUNCH_HOLE.includes(currentFrame);
 
   return (
     <div
@@ -617,7 +788,7 @@ export default function PhoneMock({
               position: 'relative',
             }}
           >
-            {isModernSmartphone && <SideButtons spec={spec} />}
+            {HAS_SIDE_BUTTONS.includes(currentFrame) && <SideButtons spec={spec} />}
 
             <div
               style={{
@@ -637,10 +808,10 @@ export default function PhoneMock({
                 style={{ width: '100%', height: '100%', border: 'none', display: 'block', background: '#fff' }}
               />
 
-              {!hideChrome && IPHONE_PRO_FAMILY.includes(currentFrame) && (
+              {!hideChrome && IPHONE_CHROME_FRAMES.includes(currentFrame) && (
                 <IPhoneChrome screenW={spec.screenW} frame={currentFrame} />
               )}
-              {!hideChrome && ANDROID_PUNCH_HOLE.includes(currentFrame) && (
+              {!hideChrome && ANDROID_CHROME_FRAMES.includes(currentFrame) && (
                 <AndroidChrome screenW={spec.screenW} frame={currentFrame} />
               )}
             </div>
@@ -655,3 +826,30 @@ export default function PhoneMock({
     </div>
   );
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Convenience wrappers for specific device families
+//
+// Each renders a <PhoneMock> pre-configured for its family. If you pass
+// neither `frame` nor `frames`, you get a device picker with that family's
+// full lineup. Pass `frame` for a single device, or `frames` for a subset.
+// ────────────────────────────────────────────────────────────────────────────
+
+function makeDeviceMockup(displayName: string, defaultFrames: PhoneFrame[]) {
+  const C = (props: PhoneMockProps) => {
+    const resolved =
+      props.frames !== undefined
+        ? props.frames
+        : props.frame !== undefined
+          ? undefined
+          : defaultFrames;
+    return <PhoneMock {...props} frames={resolved} />;
+  };
+  C.displayName = displayName;
+  return C;
+}
+
+export const IPhoneMockup     = makeDeviceMockup('IPhoneMockup',     IPHONE_FRAMES);
+export const AndroidMockup    = makeDeviceMockup('AndroidMockup',    ANDROID_PHONE_FRAMES);
+export const IPadMockup       = makeDeviceMockup('IPadMockup',       IPAD_FRAMES);
+export const AndroidTabMockup = makeDeviceMockup('AndroidTabMockup', ANDROID_TAB_FRAMES);
